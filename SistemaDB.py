@@ -35,23 +35,23 @@ CREATE TABLE presencas (
     FOREIGN KEY (materia_id) REFERENCES materias(id) ON DELETE CASCADE
 );
 
-# cadastro aluno
+--cadastro aluno
 INSERT INTO usuarios (ra, nome, email, telefone, data_nascimento) 
 VALUES ('202312345', 'Gabriel Ricetto', 'gabriel@email.com', '1234567890', '1995-05-15');
 
-#biometria
+--biometria
 
 INSERT INTO biometria (ra, hash_biometria) 
 VALUES ('202312345', 'abc123hashgeradopelaleitoraqui');
 
-#insercao de materias
+--insercao de materias
 
 INSERT INTO materias (nome, professor) 
 VALUES 
 ('Matemática', 'Prof. Luciana'),
 ('Física', 'Prof. Guilherme');
 
-#Cadastro na materia
+--Cadastro na materia
 
 -- Associar Gabriel à Matemática
 INSERT INTO aluno_materia (ra, materia_id) 
@@ -61,13 +61,13 @@ VALUES ('202312345', 1);
 INSERT INTO aluno_materia (ra, materia_id) 
 VALUES ('202312345', 2);
 
-#Presença
+--Presença
 
 -- Presença de Gabriel em Matemática
 INSERT INTO presencas (ra, materia_id, status) 
 VALUES ('202312345', 1, 'presente');
 
-#consulta de aluno matriculado em uma materia
+--consulta de aluno matriculado em uma materia
 
 SELECT u.ra, u.nome AS aluno, m.nome AS materia
 FROM aluno_materia am
@@ -75,8 +75,7 @@ JOIN usuarios u ON am.ra = u.ra
 JOIN materias m ON am.materia_id = m.id
 WHERE m.nome = 'Matemática';
 
-
-#presenca na materia
+--presenca na materia
 
 SELECT u.ra, u.nome AS aluno, m.nome AS materia, p.data_presenca, p.status
 FROM presencas p
@@ -84,7 +83,7 @@ JOIN usuarios u ON p.ra = u.ra
 JOIN materias m ON p.materia_id = m.id
 WHERE u.ra = '202312345' AND m.nome = 'Matemática';
 
-#listar presenca por materia
+--listar presenca por materia
 
 SELECT m.nome AS materia, u.nome AS aluno, p.data_presenca, p.status
 FROM presencas p
@@ -92,7 +91,7 @@ JOIN usuarios u ON p.ra = u.ra
 JOIN materias m ON p.materia_id = m.id
 ORDER BY m.nome, p.data_presenca;
 
-#integracao em python
+--integracao em python
 
 import hashlib
 import mysql.connector
@@ -100,10 +99,10 @@ import mysql.connector
 # Exemplo de biometria capturada
 biometria = "dados_da_digital"
 
-# Gerar o hash da biometria
+--Gerar o hash da biometria
 hash_biometria = hashlib.sha256(biometria.encode()).hexdigest()
 
-# Conectar ao banco de dados
+--Conectar ao banco de dados
 conn = mysql.connector.connect(
     host="localhost",
     user="root",
@@ -112,7 +111,7 @@ conn = mysql.connector.connect(
 )
 cursor = conn.cursor()
 
-# Inserir o hash no banco
+--Inserir o hash no banco
 cursor.execute("""
     INSERT INTO biometria (ra, hash_biometria)
     VALUES (%s, %s)
