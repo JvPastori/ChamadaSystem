@@ -1,7 +1,8 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QComboBox, QPushButton, QLineEdit
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap
 
-# Classe principal que exibe a janela para seleção de matéria e professor
+
 class HUDApp(QWidget):
     def __init__(self):
         super().__init__()
@@ -11,18 +12,43 @@ class HUDApp(QWidget):
         # Configurações da janela principal
         self.setWindowTitle("Seleção de Matéria")
         self.setGeometry(100, 100, 400, 600)
-        self.setStyleSheet("background-color: ##f6eee0; color: white;")
+        self.setStyleSheet("""
+            QWidget {
+                background: qlineargradient(
+                    spread:pad, 
+                    x1:0, y1:0, x2:1, y2:1, 
+                    stop:0 #f6eee0, 
+                    stop:1 #8e9eab
+                ); 
+                color: white;
+            }
+        """)
+
+        # Imagem no topo
+        image_label = QLabel()
+        pixmap = QPixmap("C:\\Users\\gk\\Downloads\\facul\\ChamadaSystem\\unespar.png")  
+        if not pixmap.isNull():
+            pixmap = pixmap.scaled(300, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        image_label.setPixmap(pixmap)
+        image_label.setAlignment(Qt.AlignCenter)
 
         # Título da seleção de matéria
         title_label = QLabel("SELECIONE A MATÉRIA:")
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet("font-size: 16px; font-weight: bold;")
 
-        # ComboBox de Matérias (opções para escolher)
+        # ComboBox de Matérias
         self.subject_combo = QComboBox()
-        self.subject_combo.addItems(["Pogramação Orientada a Objetos", "Arquitetura e Organização de Computadores", "Estrutura de Dados", "Cálculo II", "Linguagens Formais e Autônomas", "Matemática Computacional", "Teoria do Grafos" ])  # Matérias disponíveis
+        self.subject_combo.addItems([
+            "Pogramação Orientada a Objetos", 
+            "Arquitetura e Organização de Computadores", 
+            "Estrutura de Dados", 
+            "Cálculo II", 
+            "Linguagens Formais e Autônomas", 
+            "Matemática Computacional", 
+            "Teoria do Grafos"
+        ])
         self.subject_combo.setStyleSheet("background-color: white; color: black; padding: 5px;")
-        # Conecta a mudança de seleção de matéria à atualização de professores
         self.subject_combo.currentTextChanged.connect(self.update_professors)
 
         # Título para o ComboBox de professores
@@ -30,17 +56,18 @@ class HUDApp(QWidget):
         professor_label.setAlignment(Qt.AlignCenter)
         professor_label.setStyleSheet("font-size: 16px; font-weight: bold;")
 
-        # ComboBox para seleção do professor (atualizado conforme a matéria)
+        # ComboBox para seleção do professor
         self.professor_combo = QComboBox()
         self.professor_combo.setStyleSheet("background-color: white; color: black; padding: 5px;")
 
-        # Botão de confirmação para abrir a janela de confirmação
+        # Botão de confirmação
         confirm_button = QPushButton("CONFIRMAR")
         confirm_button.setStyleSheet("background-color: black; color: white; font-size: 14px; font-weight: bold; padding: 10px;")
-        confirm_button.clicked.connect(self.open_confirmation_window)  # Conecta o clique ao método para abrir nova janela
+        confirm_button.clicked.connect(self.open_confirmation_window)
 
-        # Layout principal para organizar os widgets
+        # Layout principal
         layout = QVBoxLayout()
+        layout.addWidget(image_label)
         layout.addWidget(title_label)
         layout.addWidget(self.subject_combo)
         layout.addWidget(professor_label)
@@ -48,7 +75,6 @@ class HUDApp(QWidget):
         layout.addWidget(confirm_button)
         layout.setSpacing(20)
         layout.setAlignment(Qt.AlignCenter)
-
         self.setLayout(layout)
 
         # Dicionário de professores por matéria
@@ -59,81 +85,83 @@ class HUDApp(QWidget):
             "Cálculo II": ["Luciana"],
             "Linguagens Formais e Autônomas": ["Paulo Roberto"],
             "Matemática Computacional": ["Jairo Dallaqua"],
-            "Práticas Extensionistas": ["Lisandro Modesto"],
             "Teoria do Grafos": ["José Luis"]
         }
-        # Inicializa a lista de professores para a matéria selecionada inicialmente
         self.update_professors(self.subject_combo.currentText())
 
     def update_professors(self, subject):
         """Atualiza os professores no ComboBox de acordo com a matéria selecionada."""
-        self.professor_combo.clear()  # Limpa o ComboBox de professores
+        self.professor_combo.clear()
         if subject in self.professors_by_subject:
-            # Adiciona os professores correspondentes à matéria selecionada
             self.professor_combo.addItems(self.professors_by_subject[subject])
 
     def open_confirmation_window(self):
         """Abre a janela de confirmação com a matéria e professor selecionados."""
-        # Obtém a matéria e professor atuais selecionados
         subject = self.subject_combo.currentText()
         professor = self.professor_combo.currentText()
-        
-        # Cria e exibe uma nova instância da janela de confirmação
         self.confirmation_window = ConfirmationWindow(subject, professor)
         self.confirmation_window.show()
 
-# Classe da janela de confirmação que exibe a matéria, professor e campo para digital
+
 class ConfirmationWindow(QWidget):
     def __init__(self, subject, professor):
         super().__init__()
-        
-        # Configurações básicas da janela
+
         self.setWindowTitle("Confirmação de Presença")
         self.setGeometry(150, 150, 400, 300)
-        self.setStyleSheet("background-color: ##f6eee0; color: black;")
+        self.setStyleSheet("""
+            QWidget {
+                background: qlineargradient(
+                    spread:pad, 
+                    x1:0, y1:0, x2:1, y2:1, 
+                    stop:0 #f6eee0, 
+                    stop:1 #8e9eab
+                ); 
+                color: black;
+            }
+        """)
 
-        # Criação do layout da janela
         layout = QVBoxLayout()
 
-        # Título da janela
         title_label = QLabel(f"{subject}")
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet("font-size: 18px; font-weight: bold;")
+        title_label.setStyleSheet("font-size: 18px; font-weight: bold; color: white;")
         layout.addWidget(title_label)
 
-        # Exibe o professor selecionado
         professor_label = QLabel(f"Professor(a): {professor}")
         professor_label.setAlignment(Qt.AlignCenter)
-        professor_label.setStyleSheet("font-size: 16px;")
+        professor_label.setStyleSheet("font-size: 16px; color: white;")
         layout.addWidget(professor_label)
 
-        # Label para o campo de inserção de digital
         fingerprint_label = QLabel("Insira sua digital:")
         fingerprint_label.setAlignment(Qt.AlignCenter)
-        fingerprint_label.setStyleSheet("font-size: 14px;")
+        fingerprint_label.setStyleSheet("font-size: 14px; color: white;")
         layout.addWidget(fingerprint_label)
 
-        # Campo de entrada de texto para simular a inserção de digital
         fingerprint_input = QLineEdit()
-        fingerprint_input.setEchoMode(QLineEdit.Password)  # Esconde o texto digitado
+        fingerprint_input.setEchoMode(QLineEdit.Password)
         fingerprint_input.setPlaceholderText("Simulação de entrada de digital")
-        fingerprint_input.setStyleSheet("padding: 8px; font-size: 14px;")
+        fingerprint_input.setStyleSheet("padding: 8px; font-size: 14px; color: black; background-color: white;")
         layout.addWidget(fingerprint_input)
 
-        # Botão de confirmação de presença
         confirm_button = QPushButton("Confirmar Presença")
         confirm_button.setStyleSheet("background-color: black; color: white; font-size: 14px; font-weight: bold; padding: 10px;")
-        confirm_button.clicked.connect(self.close)  # Fecha a janela ao confirmar
+        confirm_button.clicked.connect(self.close)
         layout.addWidget(confirm_button)
 
-        # Configurações do layout
+        # Botão "Finalizar Chamada"
+        finish_button = QPushButton("Finalizar Chamada")
+        finish_button.setStyleSheet("background-color: red; color: white; font-size: 14px; font-weight: bold; padding: 10px;")
+        finish_button.clicked.connect(QApplication.quit)
+        layout.addWidget(finish_button)
+
         layout.setAlignment(Qt.AlignCenter)
         layout.setSpacing(15)
         self.setLayout(layout)
 
+
 if __name__ == "__main__":
     import sys
-    # Criação e execução da aplicação
     app = QApplication(sys.argv)
     hud_app = HUDApp()
     hud_app.show()
