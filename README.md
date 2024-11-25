@@ -26,17 +26,15 @@ O objetivo principal do **ChamadaSystem** é oferecer uma solução moderna e ef
 - **Bibliotecas Necessárias**:
   - OpenCV
   - Dlib
-  - Face_recognition
-  - Flask (para interface web, se aplicável)
   - MySQL Connector ou equivalente
 - **Banco de Dados**: MySQL, PostgreSQL ou outro sistema relacional.
 
 ## 🔧 Tecnologias Utilizadas
 
 - **Linguagem de Programação**: Python
-- **Visão Computacional**: OpenCV, Dlib, Face_recognition
+- **Visão Computacional**: OpenCV, Dlib
 - **Banco de Dados**: MySQL ou PostgreSQL
-- **Interface de Usuário**: Flask ou PyQt (opcional)
+- **Interface de Usuário**: Css e PyQt
 
 ## 🛠️ Instalação
 
