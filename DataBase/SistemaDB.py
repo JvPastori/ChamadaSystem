@@ -48,22 +48,23 @@ VALUES ('202312345', 'abc123hashgeradopelaleitoraqui');
 
 INSERT INTO materias (nome, professor) 
 VALUES 
-('Matemática', 'Prof. Luciana'),
-('Física', 'Prof. Guilherme');
+('Calculo II', 'Prof. Luciana'),
+('Pratica Extensionistas', 'Prof. lisandro'),
+('Estrutura De Dados', 'Prof. Kleber');
 
 --Cadastro na materia
 
--- Associar Gabriel à Matemática
+-- Associar Gabriel à Calculo
 INSERT INTO aluno_materia (ra, materia_id) 
 VALUES ('202312345', 1);
 
--- Associar Gabriel à Física
+-- Associar Gabriel à Praticas
 INSERT INTO aluno_materia (ra, materia_id) 
 VALUES ('202312345', 2);
 
 --Presença
 
--- Presença de Gabriel em Matemática
+--Presença de Gabriel em Matemática
 INSERT INTO presencas (ra, materia_id, status) 
 VALUES ('202312345', 1, 'presente');
 
@@ -74,6 +75,7 @@ FROM aluno_materia am
 JOIN usuarios u ON am.ra = u.ra
 JOIN materias m ON am.materia_id = m.id
 WHERE m.nome = 'Matemática';
+
 
 --presenca na materia
 
@@ -99,10 +101,10 @@ import mysql.connector
 # Exemplo de biometria capturada
 biometria = "dados_da_digital"
 
---Gerar o hash da biometria
+# Gerar o hash da biometria
 hash_biometria = hashlib.sha256(biometria.encode()).hexdigest()
 
---Conectar ao banco de dados
+# Conectar ao banco de dados
 conn = mysql.connector.connect(
     host="localhost",
     user="root",
@@ -111,7 +113,7 @@ conn = mysql.connector.connect(
 )
 cursor = conn.cursor()
 
---Inserir o hash no banco
+# Inserir o hash no banco
 cursor.execute("""
     INSERT INTO biometria (ra, hash_biometria)
     VALUES (%s, %s)

@@ -1,28 +1,46 @@
-# Sistema de Chamada com Biometria
+# Sistema de Chamada com Reconhecimento Facial
 
-Este repositório contém o código-fonte e a documentação do **Sistema de Chamada com Biometria**, um projeto que utiliza autenticação biométrica para realizar o registro de presença de alunos em aulas ou eventos.
+Este repositório contém o código-fonte e a documentação do **ChamadaSystem**, um projeto que utiliza reconhecimento facial para registrar a presença de alunos em aulas ou eventos de forma prática e segura.
 
 ## 🚀 Objetivo do Projeto
 
-O objetivo principal é fornecer uma solução prática, segura e eficiente para substituir métodos tradicionais de controle de presença, como assinaturas em papel. A biometria oferece maior precisão e evita fraudes, garantindo que apenas a pessoa autorizada registre sua presença.
+O objetivo principal do **ChamadaSystem** é oferecer uma solução moderna e eficiente para substituir métodos tradicionais de controle de presença, como listas em papel ou chamadas nominais. O reconhecimento facial garante maior precisão, evita fraudes e automatiza o processo de registro.
 
 ## 🛠️ Funcionalidades
 
-- Autenticação por biometria digital.
-- Registro de presença em tempo real.
-- Armazenamento seguro dos dados em um banco de dados.
-- Interface intuitiva para facilitar o uso.
-- Integração com sistemas de gestão acadêmica.
+- **Reconhecimento Facial Avançado**: Identificação precisa dos alunos.
+- **Registro em Tempo Real**: Processamento rápido e eficiente para garantir uma experiência fluida.
+- **Banco de Dados Seguro**: Armazenamento confiável de informações.
+- **Interface Simples e Intuitiva**: Usuários podem operar facilmente o sistema.
+- **Geração de Relatórios**: Informações detalhadas para monitorar a presença.
+- **Integração Acadêmica**: Compatível com sistemas de gestão de cursos e eventos.
 
 ## 📋 Requisitos
 
-Para executar o sistema, você precisará de:
+### Hardware
+- Webcam ou câmera de alta definição.
+- Computador ou dispositivo com capacidade de processamento para redes neurais (GPU recomendada).
 
-- **Hardware**: Leitor biométrico compatível.
-- **Software**:  
-  - Python 3.9 ou superior
-  - MySQL ou outro banco de dados relacional
+### Software
+- **Python** 3.9 ou superior
+- **Bibliotecas Necessárias**:
+  - OpenCV
+  - Dlib
+  - Face_recognition
+  - Flask (para interface web, se aplicável)
+  - MySQL Connector ou equivalente
+- **Banco de Dados**: MySQL, PostgreSQL ou outro sistema relacional.
 
 ## 🔧 Tecnologias Utilizadas
 
 - **Linguagem de Programação**: Python
+- **Visão Computacional**: OpenCV, Dlib, Face_recognition
+- **Banco de Dados**: MySQL ou PostgreSQL
+- **Interface de Usuário**: Flask ou PyQt (opcional)
+
+## 🛠️ Instalação
+
+1. Clone o repositório:
+   ```bash
+   git clone https://github.com/JvPastori/ChamadaSystem.git
+   cd ChamadaSystem
