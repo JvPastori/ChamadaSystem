@@ -4,6 +4,26 @@ from PyQt5.QtGui import QPixmap
 import os
 import cv2
 import numpy as np
+import mysql.connector
+from mysql.connector import Error
+
+# Configuração do banco de dados
+db_config = {
+    'host': 'localhost',
+    'database': 'chamadasystem',
+    'user': 'root',
+    'password': '159621'
+}
+
+def conectar_banco():
+    try:
+        conn = mysql.connector.connect(**db_config)
+        if conn.is_connected():
+            print("Conexão com o banco de dados estabelecida.")
+        return conn
+    except Error as e:
+        print(f"Erro ao conectar ao banco de dados: {e}")
+        return None
 
 # Caminho para os dados faciais registrados
 face_data_dir = "face_data"
@@ -352,8 +372,8 @@ class HUDApp(QWidget):
         register_button.clicked.connect(self.cadastrar_rosto)
 
         
-        show_students_button = QPushButton("MOSTRAR ALUNOS CADASTRADOS")
-        show_students_button.setStyleSheet("background-color: purple; color: white; font-size: 14px; font-weight: bold; padding: 10px;")
+        show_students_button = QPushButton("REALIZAR CHAMADA")
+        show_students_button.setStyleSheet("background-color: blue; color: white; font-size: 14px; font-weight: bold; padding: 10px;")
         show_students_button.clicked.connect(self.show_students)
 
         # Layout
