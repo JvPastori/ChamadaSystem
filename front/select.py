@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QComboBox, QPushButton, QLineEdit, QDialog, QHBoxLayout, QTableWidget, QTableWidgetItem, QCheckBox
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QMessageBox
 import os
 import cv2
 import numpy as np
@@ -178,11 +179,14 @@ class AlunosWindow(QDialog):
 
         # Carregar os alunos e adicionar na tabela
         alunos = self.carregar_nomes_alunos()
-        alunos.sort()  # Ordenar os alunos em ordem alfabética
-        self.tableWidget.setRowCount(len(alunos))
+
+        # Não ordena mais os alunos
+        # alunos.sort()  # Remover a linha de ordenação
+
+        self.tableWidget.setRowCount(len(alunos))  # Definir o número de linhas na tabela
 
         for row, aluno in enumerate(alunos):
-            # Adicionar o ID do aluno na primeira coluna (não editável)
+            # Adicionar o nome do aluno na primeira coluna (não editável)
             item_nome = QTableWidgetItem(aluno)
             item_nome.setFlags(Qt.ItemIsEnabled)  # Impede a edição do nome
             self.tableWidget.setItem(row, 0, item_nome)
@@ -201,7 +205,16 @@ class AlunosWindow(QDialog):
         recognize_button.setStyleSheet("background-color: blue; color: white; font-size: 14px; font-weight: bold; padding: 10px;")
         recognize_button.clicked.connect(self.reconhecer_rosto)  # Conecta o botão à função reconhecer_rosto
 
-        layout.addWidget(recognize_button)  # Adiciona o botão de reconhecimento no layout
+        # Adicionar o botão de reconhecimento no layout
+        layout.addWidget(recognize_button)
+
+        # Botão para finalizar chamada
+        finalizar_button = QPushButton("Finalizar Chamada")
+        finalizar_button.setStyleSheet("background-color: red; color: white; font-size: 14px; font-weight: bold; padding: 10px;")
+        finalizar_button.clicked.connect(self.finalizar_chamada)  # Conecta o botão à função finalizar_chamada
+        
+        # Adicionar o botão de finalizar chamada no layout
+        layout.addWidget(finalizar_button)
 
         self.setLayout(layout)
 
@@ -215,26 +228,20 @@ class AlunosWindow(QDialog):
 
     def reconhecer_rosto(self):
         print("Iniciando reconhecimento facial...")
-
-        # Carregar rostos cadastrados
         faces, ids, pessoas = carregar_rostos_cadastrados()
 
         if len(faces) == 0:
             print("Nenhum rosto cadastrado encontrado!")
             return
 
-        # Mapear os nomes para números (ID numérico)
         ids_map = {pessoa: i for i, pessoa in enumerate(set(ids))}
         ids_numericos = [ids_map[pessoa] for pessoa in ids]
 
-        # Treinar o modelo com os rostos cadastrados
         model = treinar_classificador(faces, np.array(ids_numericos))
-
-        # Inicializar webcam
         self.video_capture = cv2.VideoCapture(0)
         self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
 
-        self.is_running = True  # Variável de controle para o loop de reconhecimento
+        self.is_running = True
 
         while self.is_running:
             ret, frame = self.video_capture.read()
@@ -242,60 +249,39 @@ class AlunosWindow(QDialog):
                 print("Erro ao acessar a webcam.")
                 break
 
-            # Converter a imagem para escala de cinza
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-            # Detectar rostos na imagem
             faces_detectadas = self.face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
 
             for (x, y, w, h) in faces_detectadas:
-                # Capturar a região do rosto
                 face_roi = gray[y:y+h, x:x+w]
-
-                # Reconhecer o rosto
                 id_, confidence = model.predict(face_roi)
 
-                # Verificar se a confiança é alta (menor é melhor)
                 if confidence < 100:
                     nome = list(ids_map.keys())[list(ids_map.values()).index(id_)]
                     confidence_text = f"Confiança: {round(100 - confidence)}%"
-
-                    # Marcar o checkbox correspondente ao aluno na tabela
                     self.marcar_checkbox(nome)
-                    
-                    # Aguardar 2 segundos antes de fechar
                     print(f"Face de {nome} reconhecida. Esperando 2 segundos antes de fechar a janela...")
-                    time.sleep(2)  # Espera 2 segundos
-
-                    # Após o atraso, fecha a janela da webcam
+                    time.sleep(2)
                     self.fechar_webcam()
-                    return  # Interrompe o loop de reconhecimento após o reconhecimento de um rosto
+                    return
                 else:
                     nome = "Desconhecido"
                     confidence_text = f"Confiança: {round(100 - confidence)}%"
 
-                # Desenhar um retângulo ao redor do rosto e colocar o nome
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                 cv2.putText(frame, f"{nome} {confidence_text}", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
 
-            # Exibir a imagem com a detecção e reconhecimento
             cv2.imshow("Reconhecimento Facial", frame)
 
-            # Aguardar uma chave de interrupção para parar o reconhecimento (opcional)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 print("Reconhecimento interrompido com 'q'.")
                 break
 
-        # Liberar a captura de vídeo e fechar janelas
         self.fechar_webcam()
 
     def marcar_checkbox(self, nome):
-        """
-        Marca o checkbox do aluno correspondente ao nome encontrado
-        """
-        # Buscar o aluno na tabela e marcar o checkbox
         for row in range(self.tableWidget.rowCount()):
-            aluno = self.tableWidget.item(row, 0).text()  # Obtém o nome do aluno na tabela
+            aluno = self.tableWidget.item(row, 0).text()
             if aluno == nome:
                 checkbox_item = self.tableWidget.item(row, 1)
                 checkbox_item.setCheckState(Qt.Checked)
@@ -303,20 +289,34 @@ class AlunosWindow(QDialog):
                 return
 
     def fechar_webcam(self):
-        """
-        Função para liberar a captura de vídeo e fechar a janela do OpenCV.
-        """
         if self.video_capture.isOpened():
-            self.video_capture.release()  # Liberar a captura da webcam
-        cv2.destroyAllWindows()  # Fechar todas as janelas do OpenCV
+            self.video_capture.release()
+        cv2.destroyAllWindows()
 
     def closeEvent(self, event):
+        self.is_running = False
+        self.fechar_webcam()
+        event.accept()
+
+    def finalizar_chamada(self):
         """
-        Fechar a janela da webcam corretamente quando a janela principal for fechada.
+        Método para finalizar a chamada (fechar a janela) e mostrar a mensagem "Chamada cadastrada".
         """
-        self.is_running = False  # Interromper o loop da webcam
-        self.fechar_webcam()  # Fechar a webcam
-        event.accept()  # Aceitar o evento de fechar a janela
+        print("Finalizando a chamada...")
+        
+        # Exibir a mensagem de confirmação
+        msg_box = QMessageBox()
+        msg_box.setIcon(QMessageBox.Information)
+        msg_box.setWindowTitle("Chamada Finalizada")
+        msg_box.setText("Chamada cadastrada.")
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        
+        # Exibir a caixa de diálogo e aguardar a ação do usuário
+        msg_box.exec_()
+
+        # Fechar a janela após a interação do usuário
+        self.close()
+
 
 
 # Código do front-end
