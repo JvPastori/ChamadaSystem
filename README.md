@@ -1,41 +1,45 @@
-# Sistema de Chamada com Reconhecimento Facial
+# Sistema de Reconhecimento Facial e Controle de Presença
 
-Este repositório contém o código-fonte e a documentação do **ChamadaSystem**, um projeto que utiliza reconhecimento facial para registrar a presença de alunos em aulas ou eventos de forma prática e segura.
+Este projeto é um sistema de **reconhecimento facial** integrado com controle de presença, ideal para uso acadêmico ou em ambientes onde é necessário gerenciar a presença de participantes de forma prática e eficiente.
 
-## 🚀 Objetivo do Projeto
+## 📋 Funcionalidades
 
-O objetivo principal do **ChamadaSystem** é oferecer uma solução moderna e eficiente para substituir métodos tradicionais de controle de presença, como listas em papel ou chamadas nominais. O reconhecimento facial garante maior precisão, evita fraudes e automatiza o processo de registro.
+1. **Cadastro de Rostos:**  
+   Permite o cadastro de rostos individuais utilizando a webcam do sistema, armazenando as imagens em diretórios específicos para cada pessoa.
 
-## 🛠️ Funcionalidades
+2. **Reconhecimento Facial:**  
+   Reconhece rostos previamente cadastrados e exibe informações como o nome da pessoa e a confiança no reconhecimento.
 
-- **Reconhecimento Facial Avançado**: Identificação precisa dos alunos.
-- **Registro em Tempo Real**: Processamento rápido e eficiente para garantir uma experiência fluida.
-- **Banco de Dados Seguro**: Armazenamento confiável de informações.
-- **Interface Simples e Intuitiva**: Usuários podem operar facilmente o sistema.
-- **Geração de Relatórios**: Informações detalhadas para monitorar a presença.
-- **Integração Acadêmica**: Compatível com sistemas de gestão de cursos e eventos.
+3. **Controle de Presença:**  
+   Apresenta uma interface que lista os alunos cadastrados, permitindo marcar presença com base no reconhecimento facial.
 
-## 📋 Requisitos
+4. **Seleção de Disciplina e Professor:**  
+   Oferece opções para selecionar disciplinas e professores, permitindo personalizar o contexto do controle de chamada.
 
-### Hardware
-- Webcam ou câmera de alta definição.
-- Computador ou dispositivo com capacidade de processamento para redes neurais (GPU recomendada).
+5. **Banco de Dados Integrado:**  
+   Armazena informações relacionadas às disciplinas, professores e chamadas realizadas em um banco de dados MySQL.
 
-### Software
-- **Python** 3.9 ou superior
-- **Bibliotecas Necessárias**:
-  - OpenCV
-  - Dlib
-  - MySQL Connector ou equivalente
-- **Banco de Dados**: MySQL, PostgreSQL ou outro sistema relacional.
+---
 
-## 🔧 Tecnologias Utilizadas
+## ⚙️ Tecnologias Utilizadas
 
-- **Linguagem de Programação**: Python
-- **Visão Computacional**: OpenCV, Dlib
-- **Banco de Dados**: MySQL ou PostgreSQL
-- **Interface de Usuário**: Css e PyQt
+- **Python 3.8+**
+- **PyQt5** (Interface gráfica do usuário)
+- **OpenCV** (Processamento de imagens e reconhecimento facial)
+- **MySQL** (Banco de dados para armazenamento de informações)
+- **Numpy** (Manipulação de dados e arrays)
+- **Pandas** (Manipulação e análise de dados)
 
+---
+
+## 🛠️ Configuração do Ambiente
+
+### 1. Requisitos
+Certifique-se de ter as seguintes ferramentas instaladas no seu sistema:
+
+- **Python** (versão 3.8 ou superior)
+- **MySQL Server**
+- **Bibliotecas Python:**  
 ## 🛠️ Instalação
 
 1. Clone o repositório:
