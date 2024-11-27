@@ -3,100 +3,142 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 import os
 import cv2
-import mysql.connector
 import numpy as np
 
 # Caminho para os dados faciais registrados
 face_data_dir = "face_data"
 
-# Conexão com o banco de dados
-def conectar_db():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="AIBOLSONARO123@",  # Altere para sua senha MySQL
-        database="presenca"
-    )
-
-# Função para adicionar aluno e foto ao banco de dados
-def adicionar_aluno(nome, caminho_foto):
-    conn = conectar_db()
-    cursor = conn.cursor()
-    with open(caminho_foto, 'rb') as f:
-        foto_binaria = f.read()
-    query = "INSERT INTO alunos (nome, foto) VALUES (%s, %s)"
-    try:
-        cursor.execute(query, (nome, foto_binaria))
-        conn.commit()
-        print(f"Aluno {nome} sincronizado com sucesso!")
-    except mysql.connector.Error as err:
-        print(f"Erro ao sincronizar {nome}: {err}")
-    finally:
-        cursor.close()
-        conn.close()
-
-# Sincroniza face_data com o banco de dados
-def sincronizar_face_data_com_db():
-    print("Sincronizando dados da pasta face_data com o banco de dados...")
-    for nome in os.listdir(face_data_dir):
-        pessoa_dir = os.path.join(face_data_dir, nome)
-        if os.path.isdir(pessoa_dir):
-            for foto_nome in os.listdir(pessoa_dir):
-                caminho_foto = os.path.join(pessoa_dir, foto_nome)
+# Função para carregar rostos cadastrados no face_data
+def carregar_rostos_cadastrados():
+    faces = []
+    ids = []
+    pessoas = []  # Lista para armazenar os nomes das pessoas
+    for pessoa_dir in os.listdir(face_data_dir):
+        pessoa_path = os.path.join(face_data_dir, pessoa_dir)
+        if os.path.isdir(pessoa_path):
+            for foto_nome in os.listdir(pessoa_path):
+                caminho_foto = os.path.join(pessoa_path, foto_nome)
                 if os.path.isfile(caminho_foto):
-                    adicionar_aluno(nome, caminho_foto)
-    print("Sincronização concluída!")
+                    imagem = cv2.imread(caminho_foto, cv2.IMREAD_GRAYSCALE)
+                    faces.append(imagem)
+                    ids.append(pessoa_dir)  # Adicionando nome da pessoa
+                    pessoas.append(pessoa_dir)  # Lista com os nomes das pessoas
+    return faces, ids, pessoas
 
-# Reconhecimento facial
-def reconhecer_rosto():
-    print("Iniciando reconhecimento facial...")
-    video_capture = cv2.VideoCapture(0)
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
-    while True:
-        ret, frame = video_capture.read()
-        if not ret:
-            print("Erro ao acessar a webcam.")
-            break
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
-        for (x, y, w, h) in faces:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-        cv2.imshow("Reconhecimento Facial", frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):  # Pressione 'q' para sair
-            break
-    video_capture.release()
-    cv2.destroyAllWindows()
-    print("Reconhecimento facial finalizado!")
+# Função para treinar o classificador
+def treinar_classificador(faces, ids):
+    model = cv2.face.LBPHFaceRecognizer_create()
+    model.train(faces, np.array(ids))
+    return model
 
-# Cadastro de rosto
+# Função para cadastrar um rosto
 def cadastrar_rosto(nome):
     print(f"Iniciando cadastro de rosto para {nome}...")
+
+    # Abertura da webcam
     video_capture = cv2.VideoCapture(0)
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+
+    # Criar diretório para a pessoa, caso não exista
     person_dir = os.path.join(face_data_dir, nome)
     if not os.path.exists(person_dir):
         os.makedirs(person_dir)
+
     count = 0
     while count < 5:
         ret, frame = video_capture.read()
         if not ret:
             print("Erro ao acessar a webcam.")
             break
+
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
-        for (x, y, w, h) in faces:
+        faces_detectadas = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
+
+        for (x, y, w, h) in faces_detectadas:
+            # Desenha o retângulo ao redor do rosto
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             face_roi = gray[y:y + h, x:x + w]
             face_path = os.path.join(person_dir, f"face_{count}.jpg")
             cv2.imwrite(face_path, face_roi)
             count += 1
+
+        # Exibe a janela com a webcam
         cv2.imshow("Cadastro de Rosto", frame)
+
+        # Permite sair do loop com a tecla 'q' ou após 5 fotos
         if cv2.waitKey(1) & 0xFF == ord('q') or count >= 5:
             break
+
     video_capture.release()
     cv2.destroyAllWindows()
     print(f"Cadastro de rosto concluído para {nome}!")
 
+# Função para reconhecer rostos
+def reconhecer_rosto():
+    print("Iniciando reconhecimento facial...")
+
+    # Carregar rostos cadastrados
+    faces, ids, pessoas = carregar_rostos_cadastrados()
+
+    if len(faces) == 0:
+        print("Nenhum rosto cadastrado encontrado!")
+        return
+
+    # Mapear os nomes para números (ID numérico)
+    ids_map = {pessoa: i for i, pessoa in enumerate(set(ids))}
+    ids_numericos = [ids_map[pessoa] for pessoa in ids]
+
+    # Treinar o modelo com os rostos cadastrados
+    model = treinar_classificador(faces, np.array(ids_numericos))
+
+    # Inicializar webcam
+    video_capture = cv2.VideoCapture(0)
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+
+    while True:
+        ret, frame = video_capture.read()
+        if not ret:
+            print("Erro ao acessar a webcam.")
+            break
+
+        # Converter a imagem para escala de cinza
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # Detectar rostos na imagem
+        faces_detectadas = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
+
+        for (x, y, w, h) in faces_detectadas:
+            # Capturar a região do rosto
+            face_roi = gray[y:y+h, x:x+w]
+
+            # Reconhecer o rosto
+            id_, confidence = model.predict(face_roi)
+
+            # Verificar se a confiança é alta (menor é melhor)
+            if confidence < 100:
+                nome = list(ids_map.keys())[list(ids_map.values()).index(id_)]
+                confidence_text = f"Confiança: {round(100 - confidence)}%"
+            else:
+                nome = "Desconhecido"
+                confidence_text = f"Confiança: {round(100 - confidence)}%"
+
+            # Desenhar um retângulo ao redor do rosto e colocar o nome
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.putText(frame, f"{nome} {confidence_text}", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
+
+        # Exibir a imagem com a detecção e reconhecimento
+        cv2.imshow("Reconhecimento Facial", frame)
+
+        # Sair da webcam quando pressionar 'q'
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    # Liberar a captura de vídeo e fechar janelas
+    video_capture.release()
+    cv2.destroyAllWindows()
+    print("Reconhecimento facial finalizado!")
+
+# Código do front-end
 class HUDApp(QWidget):
     def __init__(self):
         super().__init__()
@@ -121,7 +163,7 @@ class HUDApp(QWidget):
         self.subject_combo = QComboBox()
         self.subject_combo.setStyleSheet("background-color: white; padding: 5px;")
         self.subject_combo.addItems([
-            "Pogramação Orientada a Objetos",
+            "Programação Orientada a Objetos",
             "Arquitetura e Organização de Computadores",
             "Estrutura de Dados",
             "Cálculo II",
@@ -144,17 +186,13 @@ class HUDApp(QWidget):
         self.name_input.setStyleSheet("padding: 5px; font-size: 14px;")
 
         # Botões
-        sync_button = QPushButton("ATUALIZAR DB")
-        sync_button.setStyleSheet("background-color: blue; color: white; font-size: 14px; font-weight: bold; padding: 10px;")
-        sync_button.clicked.connect(sincronizar_face_data_com_db)
+        register_button = QPushButton("CADASTRAR ROSTO")
+        register_button.setStyleSheet("background-color: green; color: white; font-size: 14px; font-weight: bold; padding: 10px;")
+        register_button.clicked.connect(self.cadastrar_rosto)
 
         recognize_button = QPushButton("RECONHECER ROSTO")
-        recognize_button.setStyleSheet("background-color: green; color: white; font-size: 14px; font-weight: bold; padding: 10px;")
-        recognize_button.clicked.connect(reconhecer_rosto)
-
-        register_button = QPushButton("CADASTRAR ROSTO")
-        register_button.setStyleSheet("background-color: greenblack; color: white; font-size: 14px; font-weight: bold; padding: 10px;")
-        register_button.clicked.connect(self.cadastrar_rosto)
+        recognize_button.setStyleSheet("background-color: blue; color: white; font-size: 14px; font-weight: bold; padding: 10px;")
+        recognize_button.clicked.connect(self.reconhecer_rosto)
 
         # Layout
         layout = QVBoxLayout()
@@ -164,13 +202,12 @@ class HUDApp(QWidget):
         layout.addWidget(professor_label)
         layout.addWidget(self.professor_combo)
         layout.addWidget(self.name_input)
-        layout.addWidget(sync_button)
-        layout.addWidget(recognize_button)
         layout.addWidget(register_button)
+        layout.addWidget(recognize_button)
         self.setLayout(layout)
 
         self.professors_by_subject = {
-            "Pogramação Orientada a Objetos": ["Renato Corgosinho"],
+            "Programação Orientada a Objetos": ["Renato Corgosinho"],
             "Arquitetura e Organização de Computadores": ["Paulo Roberto"],
             "Estrutura de Dados": ["Kleber"],
             "Cálculo II": ["Luciana"],
@@ -181,9 +218,9 @@ class HUDApp(QWidget):
         self.update_professors(self.subject_combo.currentText())
 
     def update_professors(self, subject):
+        # Atualiza a lista de professores com base na matéria selecionada
         self.professor_combo.clear()
-        if subject in self.professors_by_subject:
-            self.professor_combo.addItems(self.professors_by_subject[subject])
+        self.professor_combo.addItems(self.professors_by_subject.get(subject, []))
 
     def cadastrar_rosto(self):
         nome = self.name_input.text().strip()
@@ -191,6 +228,9 @@ class HUDApp(QWidget):
             print("Por favor, insira um nome para cadastro.")
             return
         cadastrar_rosto(nome)
+
+    def reconhecer_rosto(self):
+        reconhecer_rosto()
 
 if __name__ == '__main__':
     app = QApplication([])
