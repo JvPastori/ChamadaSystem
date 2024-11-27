@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QComboBox, QPushButton, QLineEdit
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QComboBox, QPushButton, QLineEdit, QDialog, QHBoxLayout, QTableWidget, QTableWidgetItem, QCheckBox
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 import os
@@ -138,6 +138,167 @@ def reconhecer_rosto():
     cv2.destroyAllWindows()
     print("Reconhecimento facial finalizado!")
 
+# Nova janela para mostrar alunos cadastrados
+
+import time
+
+class AlunosWindow(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Alunos Cadastrados")
+        self.setGeometry(100, 100, 400, 400)
+
+        # Layout da janela de alunos
+        layout = QVBoxLayout()
+
+        # Tabela de alunos com checkbox
+        self.tableWidget = QTableWidget()
+        self.tableWidget.setColumnCount(2)  # Duas colunas: ID e Checkbox
+        self.tableWidget.setHorizontalHeaderLabels(["ID", "Selecionado"])
+
+        # Carregar os alunos e adicionar na tabela
+        alunos = self.carregar_nomes_alunos()
+        alunos.sort()  # Ordenar os alunos em ordem alfabética
+        self.tableWidget.setRowCount(len(alunos))
+
+        for row, aluno in enumerate(alunos):
+            # Adicionar o ID do aluno na primeira coluna (não editável)
+            item_nome = QTableWidgetItem(aluno)
+            item_nome.setFlags(Qt.ItemIsEnabled)  # Impede a edição do nome
+            self.tableWidget.setItem(row, 0, item_nome)
+
+            # Adicionar checkbox na segunda coluna
+            checkbox_item = QTableWidgetItem()
+            checkbox_item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
+            checkbox_item.setCheckState(Qt.Unchecked)
+            self.tableWidget.setItem(row, 1, checkbox_item)
+
+        # Layout da janela
+        layout.addWidget(self.tableWidget)
+
+        # Botão para reconhecer rostos
+        recognize_button = QPushButton("Reconhecer Rosto")
+        recognize_button.setStyleSheet("background-color: blue; color: white; font-size: 14px; font-weight: bold; padding: 10px;")
+        recognize_button.clicked.connect(self.reconhecer_rosto)  # Conecta o botão à função reconhecer_rosto
+
+        layout.addWidget(recognize_button)  # Adiciona o botão de reconhecimento no layout
+
+        self.setLayout(layout)
+
+    def carregar_nomes_alunos(self):
+        alunos = []
+        for pessoa_dir in os.listdir(face_data_dir):
+            pessoa_path = os.path.join(face_data_dir, pessoa_dir)
+            if os.path.isdir(pessoa_path):
+                alunos.append(pessoa_dir)
+        return alunos
+
+    def reconhecer_rosto(self):
+        print("Iniciando reconhecimento facial...")
+
+        # Carregar rostos cadastrados
+        faces, ids, pessoas = carregar_rostos_cadastrados()
+
+        if len(faces) == 0:
+            print("Nenhum rosto cadastrado encontrado!")
+            return
+
+        # Mapear os nomes para números (ID numérico)
+        ids_map = {pessoa: i for i, pessoa in enumerate(set(ids))}
+        ids_numericos = [ids_map[pessoa] for pessoa in ids]
+
+        # Treinar o modelo com os rostos cadastrados
+        model = treinar_classificador(faces, np.array(ids_numericos))
+
+        # Inicializar webcam
+        self.video_capture = cv2.VideoCapture(0)
+        self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+
+        self.is_running = True  # Variável de controle para o loop de reconhecimento
+
+        while self.is_running:
+            ret, frame = self.video_capture.read()
+            if not ret:
+                print("Erro ao acessar a webcam.")
+                break
+
+            # Converter a imagem para escala de cinza
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+            # Detectar rostos na imagem
+            faces_detectadas = self.face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
+
+            for (x, y, w, h) in faces_detectadas:
+                # Capturar a região do rosto
+                face_roi = gray[y:y+h, x:x+w]
+
+                # Reconhecer o rosto
+                id_, confidence = model.predict(face_roi)
+
+                # Verificar se a confiança é alta (menor é melhor)
+                if confidence < 100:
+                    nome = list(ids_map.keys())[list(ids_map.values()).index(id_)]
+                    confidence_text = f"Confiança: {round(100 - confidence)}%"
+
+                    # Marcar o checkbox correspondente ao aluno na tabela
+                    self.marcar_checkbox(nome)
+                    
+                    # Aguardar 2 segundos antes de fechar
+                    print(f"Face de {nome} reconhecida. Esperando 2 segundos antes de fechar a janela...")
+                    time.sleep(2)  # Espera 2 segundos
+
+                    # Após o atraso, fecha a janela da webcam
+                    self.fechar_webcam()
+                    return  # Interrompe o loop de reconhecimento após o reconhecimento de um rosto
+                else:
+                    nome = "Desconhecido"
+                    confidence_text = f"Confiança: {round(100 - confidence)}%"
+
+                # Desenhar um retângulo ao redor do rosto e colocar o nome
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                cv2.putText(frame, f"{nome} {confidence_text}", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
+
+            # Exibir a imagem com a detecção e reconhecimento
+            cv2.imshow("Reconhecimento Facial", frame)
+
+            # Aguardar uma chave de interrupção para parar o reconhecimento (opcional)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                print("Reconhecimento interrompido com 'q'.")
+                break
+
+        # Liberar a captura de vídeo e fechar janelas
+        self.fechar_webcam()
+
+    def marcar_checkbox(self, nome):
+        """
+        Marca o checkbox do aluno correspondente ao nome encontrado
+        """
+        # Buscar o aluno na tabela e marcar o checkbox
+        for row in range(self.tableWidget.rowCount()):
+            aluno = self.tableWidget.item(row, 0).text()  # Obtém o nome do aluno na tabela
+            if aluno == nome:
+                checkbox_item = self.tableWidget.item(row, 1)
+                checkbox_item.setCheckState(Qt.Checked)
+                print(f"Aluno {nome} reconhecido e checkbox marcado!")
+                return
+
+    def fechar_webcam(self):
+        """
+        Função para liberar a captura de vídeo e fechar a janela do OpenCV.
+        """
+        if self.video_capture.isOpened():
+            self.video_capture.release()  # Liberar a captura da webcam
+        cv2.destroyAllWindows()  # Fechar todas as janelas do OpenCV
+
+    def closeEvent(self, event):
+        """
+        Fechar a janela da webcam corretamente quando a janela principal for fechada.
+        """
+        self.is_running = False  # Interromper o loop da webcam
+        self.fechar_webcam()  # Fechar a webcam
+        event.accept()  # Aceitar o evento de fechar a janela
+
+
 # Código do front-end
 class HUDApp(QWidget):
     def __init__(self):
@@ -190,9 +351,10 @@ class HUDApp(QWidget):
         register_button.setStyleSheet("background-color: green; color: white; font-size: 14px; font-weight: bold; padding: 10px;")
         register_button.clicked.connect(self.cadastrar_rosto)
 
-        recognize_button = QPushButton("RECONHECER ROSTO")
-        recognize_button.setStyleSheet("background-color: blue; color: white; font-size: 14px; font-weight: bold; padding: 10px;")
-        recognize_button.clicked.connect(self.reconhecer_rosto)
+        
+        show_students_button = QPushButton("MOSTRAR ALUNOS CADASTRADOS")
+        show_students_button.setStyleSheet("background-color: purple; color: white; font-size: 14px; font-weight: bold; padding: 10px;")
+        show_students_button.clicked.connect(self.show_students)
 
         # Layout
         layout = QVBoxLayout()
@@ -203,7 +365,7 @@ class HUDApp(QWidget):
         layout.addWidget(self.professor_combo)
         layout.addWidget(self.name_input)
         layout.addWidget(register_button)
-        layout.addWidget(recognize_button)
+        layout.addWidget(show_students_button)
         self.setLayout(layout)
 
         self.professors_by_subject = {
@@ -231,6 +393,11 @@ class HUDApp(QWidget):
 
     def reconhecer_rosto(self):
         reconhecer_rosto()
+
+    def show_students(self):
+        # Exibe a janela de alunos cadastrados
+        alunos_window = AlunosWindow()
+        alunos_window.exec_()
 
 if __name__ == '__main__':
     app = QApplication([])
